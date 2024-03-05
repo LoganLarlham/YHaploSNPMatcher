@@ -6,11 +6,13 @@ import os
 import sys
 import pandas as pd
 
+""" 
 #load in .xlsx file with AADR metadata
 #read in the AADR metadata file
 AADR_metadata = pd.read_excel('01_Raw_data/AADR_plink/AADR Annotation.xlsx')
 
-print(AADR_metadata.head())
+ """
+
 
 #This section reads in the AADR map into a df with proper column names
 #read in the AADR map file
@@ -32,6 +34,8 @@ new_column_names = {i: name for i, name in enumerate(AADR_map['rsid'].values, st
 AADR_ped = AADR_ped.rename(columns=new_column_names)
 #delete duplicated data from the AADR_ped
 AADR_ped = AADR_ped.map(lambda x: x.split()[0] if isinstance(x, str) else x)
+
+print('AADR_ped\n', AADR_ped.head())
 #split AADR_ped into two data frames, one with rsIDs and one with meta data (columns 1-6)
 AADR_ped_meta = AADR_ped.iloc[:, :6]
 AADR_ped_rsids = AADR_ped.iloc[:, 6:]
@@ -40,10 +44,12 @@ AADR_ped_rsids = AADR_ped_rsids.T.reset_index()
 #rename the columns of the AADR_ped_rsids data frame
 AADR_ped_rsids.columns = ['rsid'] + [f'individual_{i}' for i in range(len(AADR_ped_rsids.columns) - 1)]
 
+print('AADR_ped_meta\n', AADR_ped_meta.head())
 
 #Read in the user file
-userfile = pd.read_csv('b37_filtered_Test4_DNA.txt', sep='\t', skiprows=2, names=['rsid', 'chromosome', 'position', 'allele1', 'allele2'])
+userfile = pd.read_csv('03_tmpfiles/b37_filtered_Test4_DNA.txt', sep='\t', skiprows=2, names=['rsid', 'chromosome', 'position', 'allele1', 'allele2'])
 
+print('userfile\n', userfile.head())
 
 #this section of code merges the userfile with the AADR_ped_rsids data frame on rsid, then creates a comparison data frame and counts the number of snps that match for each individual
 #merge the userfile with the AADR_ped_rsids data frame on rsid
@@ -55,12 +61,14 @@ comparison_df = comparison_df.astype(str)
 allele2_values = comparison_df['allele2']
 matches = (comparison_df.iloc[:, 1:] == allele2_values.values[:, None]).sum()
 
-
-
 #sort the matches in descending order
-matches = matches.sort_values(ascending=False)
+sorted_matches = matches.sort_values(ascending=False)
 
-print('matches\n', matches.head())
+#get the number of matches for each individual and add it as a column to AADR_ped_meta
+#the digits following the underscore in the first columnb of matches is the index of the individual in AADR_ped_meta 
+AADR_ped_meta['matches'] = [matches.iloc[i] for i in range(len(matches))]
+
+
 
 
 
