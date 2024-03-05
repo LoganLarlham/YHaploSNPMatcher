@@ -25,7 +25,7 @@ def UserCrossref(inputfile):
     #write the user and haplogroup to the file
     outputfile.write('#User: ' + basename + '\n')
     #write the column names to the file
-    outputfile.write('#rsid\tchromosome\tposition\tallele1\n')
+    outputfile.write('#rsid\tchromosome\tposition\tallele2\n')
 
     if inputfile.endswith('.txt'):
         #read in the user snp file
@@ -35,21 +35,24 @@ def UserCrossref(inputfile):
             #rename userfile columns
             userfile.columns = ['rsid', 'chromosome', 'position', 'allele1', 'allele2']
         elif len(userfile.columns) == 4:
-            userfile.columns = ['rsid', 'chromosome', 'position', 'allele1',]
-        #only keep the first chatacter of the allele1 column (insted of genotype, only 1 allele)
+            userfile.columns = ['rsid', 'chromosome', 'position', 'allele2',]
     elif inputfile.endswith('.csv'):
         userfile = pd.read_csv(inputfile, sep=',')
         #rename userfile columns
         if len(userfile.columns) == 5:
             userfile.columns = ['rsid', 'chromosome', 'position', 'allele1', 'allele2']
         elif len(userfile.columns) == 4:
-            userfile.columns = ['rsid', 'chromosome', 'position', 'allele1',]
+            userfile.columns = ['rsid', 'chromosome', 'position', 'allele2',]
     else:
         raise ValueError(f"Unsupported file format: {inputfile}; must be .txt or .csv in plink format")
         
     #remove all rows from userfile which are not chromosome 24(Y) or Y
     userfile = userfile[(userfile['chromosome'] == 24) | (userfile['chromosome'] == 'Y') | (userfile['chromosome'] == 'XY')]
-    userfile['allele1'] = userfile['allele1'].str[0]
+    #only keep the first chatacter of the allele1 column (insted of genotype, only 1 allele)
+    if len(userfile['allele2']) == 2:
+        userfile['allele2'] = userfile['allele2'].str[1]
+    else:
+        userfile['allele2'] = userfile['allele2'].str[0]
 
     #copy lines from userfile to outputfile if the rsid is in the isogg2019 file
     # Create a mask that is True for rows where 'rsid' is in isogg2019['rsid'].values
@@ -59,6 +62,9 @@ def UserCrossref(inputfile):
     selected_rows = userfile[mask]
 
     # Write the selected rows to the output file
-    selected_rows.to_csv(outputfile, sep='\t', columns=['rsid', 'chromosome', 'position', 'allele1'], header=False, index=False)    #close the output file
+    selected_rows.to_csv(outputfile, sep='\t', columns=['rsid', 'chromosome', 'position', 'allele2'], header=False, index=False)   
+    if len(selected_rows) == 0:
+        raise ValueError(f"No matching SNPs found in isogg2019 for {basename}")
+    #close the output file
     outputfile.close()
     return '03_tmpfiles/Filtered_User/b37_filtered_' + basename

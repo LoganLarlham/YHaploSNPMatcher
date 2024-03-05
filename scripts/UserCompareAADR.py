@@ -55,7 +55,7 @@ print(AADR_ped_rsids.head())
 def getMatches(userfile_selection):
 
     #Read in the user file
-    userfile = pd.read_csv(userfile_selection, sep='\t', skiprows=2, names=['rsid', 'chromosome', 'position', 'allele1'])
+    userfile = pd.read_csv(userfile_selection, sep='\t', skiprows=2, names=['rsid', 'chromosome', 'position', 'allele2'])
 
     #this section of code merges the userfile with the AADR_ped_rsids data frame on rsid, then creates a comparison data frame and counts the number of snps that match for each individual
     #merge the userfile with the AADR_ped_rsids data frame on rsid
@@ -64,8 +64,8 @@ def getMatches(userfile_selection):
     comparison_df = merged_df.drop(columns=['rsid', 'chromosome', 'position'])
     comparison_df = comparison_df.astype(str)
     #count the number of snps that match for each individual
-    allele1_values = comparison_df['allele1']
-    matches = (comparison_df.iloc[:, 1:] == allele1_values.values[:, None]).sum()
+    allele2_values = comparison_df['allele2']
+    matches = (comparison_df.iloc[:, 1:] == allele2_values.values[:, None]).sum()
 
     #get the number of matches for each individual and add it as a column to AADR_ped_meta
     #the digits following the underscore in the first columnb of matches is the index of the individual in AADR_ped_meta 
