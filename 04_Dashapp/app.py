@@ -25,12 +25,20 @@ app.layout = html.Div([
     Output('results-container', 'children'),
     [Input('userfile-dropdown', 'value')]
 )
+
+#need to add functionality to upload a user file
+#need to change formatting of page
+#need to change data displayed into the table
+#need to add hover/click functionality to the table
+#need to add a button to download the results
+
+
 def update_results(selected_file):
     try:
         #generate filtered file and return path
         results_file_path = User_snpfilter.UserCrossref(selected_file)
         
-        # Call a function from data_processing to process the file and get results
+        # Call function from UserCompareAADR to process the file and get results
         results = UserCompareAADR.getMatches(results_file_path)
         
         # Generate HTML table or other components to display results
