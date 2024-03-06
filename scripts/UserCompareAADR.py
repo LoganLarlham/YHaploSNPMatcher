@@ -6,12 +6,18 @@ import os
 import sys
 import pandas as pd
 
-""" 
-#load in .xlsx file with AADR metadata
+
+ #load in .xlsx file with AADR metadata
 #read in the AADR metadata file
 AADR_metadata = pd.read_excel('01_Raw_data/AADR_plink/AADR Annotation.xlsx')
 
- """
+#remove useless columns from the AADR_metadata
+columns_to_keep = AADR_metadata.columns[[1, 10, 13]]
+columns_to_drop = AADR_metadata.columns.difference(columns_to_keep)
+AADR_metadata_subset = AADR_metadata.drop(columns=columns_to_drop)
+#rename the columns of the AADR_metadata_subset data frame
+AADR_metadata_subset.columns = ['GeneticID', 'FullDate', 'Locality']
+
 
 
 #This section reads in the AADR map into a df with proper column names
@@ -44,8 +50,6 @@ AADR_ped_rsids = AADR_ped_rsids.T.reset_index()
 #rename the columns of the AADR_ped_rsids data frame
 AADR_ped_rsids.columns = ['rsid'] + [f'individual_{i}' for i in range(len(AADR_ped_rsids.columns) - 1)]
 
-print(AADR_ped_rsids.head())
-
 
 #need to add functionality to get the non-matching snps from the individuals and the the corresponding snp from the user file and its position
 #need to add functionality to get additional meta data from excel file
@@ -73,6 +77,10 @@ def getMatches(userfile_selection):
 
     return AADR_ped_meta.sort_values(by='matches', ascending=False)
 
+def getMetaData(GeneticID):
+    #get the individual data from the AADR_metadata_subset data frame
+    individual_data = AADR_metadata_subset[AADR_metadata_subset['GeneticID'] == GeneticID]
+    return individual_data
 
 
 
