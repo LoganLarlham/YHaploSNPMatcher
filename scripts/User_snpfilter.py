@@ -13,11 +13,14 @@ import pandas as pd
 #need to add functionality to only get isogg snps which are associated with the userfile haplogroup
 
 
-def UserCrossref(inputfile):
+def UserCrossref(inputfile, haplogroup):
     #read in the isogg2019 file
     isogg2019 = pd.read_csv('01_Raw_data/AncientYDNA/snpFile_b37_isogg2019.txt', sep='\t')
     #add column names to isogg2019
     isogg2019.columns = ['rsid', 'position', 'ref', 'haplogroup', 'var', 'genotype']
+    #remove all row from isogg2019 which are not in the haplogroup
+    isogg2019 = isogg2019[isogg2019['haplogroup'] == haplogroup]
+    
     #inputfiel basename
     basename = os.path.basename(inputfile)
     #make a new file to write to in current directory with  inputfile basename
@@ -48,6 +51,9 @@ def UserCrossref(inputfile):
         
     #remove all rows from userfile which are not chromosome 24(Y) or Y
     userfile = userfile[(userfile['chromosome'] == 24) | (userfile['chromosome'] == 'Y') | (userfile['chromosome'] == 'XY')]
+    #remove all rows from userfile which are not in the haplogroup
+
+
     #only keep the first chatacter of the allele1 column (insted of genotype, only 1 allele)
     if len(userfile['allele2']) == 2:
         userfile['allele2'] = userfile['allele2'].str[1]
