@@ -1,41 +1,24 @@
-
-# √ need to add functionality to upload a user file
-# √ need to change formatting of page
-# √ need to change data displayed into the table
-#need to add hover/click functionality to the table
-#need to add a button to download the results
-
-
-
-from dash import Dash, dcc, html, Input, Output, dash_table, State, callback_context, exceptions
+from dash import Dash, dcc, html, Input, Output, dash_table, State, callback_context
 import glob
 import os
 import sys
+import base64
 
-# Add the parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 
 from scripts import UserCompareAADR, User_snpfilter
 
-
-
-
-#External CSS Stylesheets
 external_stylesheets_style = [{
     'href': '04_Dashapp/assets/bootstrap.css',
     'rel': 'stylesheet',
 }]
 
-# Add the external_stylesheets to the app
 app = Dash(__name__, external_stylesheets=external_stylesheets_style, suppress_callback_exceptions=True)
 app.title = 'Y Haplogroup Matcher'
 
-# Get a list of user files from the 03_tmpfiles directory
 userfiles = glob.glob('01_Raw_data/TestUsers/Test*/*_DNA.txt') + glob.glob('01_Raw_data/TestUsers/Test*/*.csv')
 userfiles_options = [{'label': os.path.basename(file).split('_')[0], 'value': file} for file in userfiles]
 
-# Define the layout of the app
 app.layout = html.Div([
     html.Div([
         html.H1('Which ancient dna sample are you most similar to?'),
@@ -44,8 +27,8 @@ app.layout = html.Div([
     ], className='my-background'),
     dcc.Dropdown(
         id='userfile-dropdown',
-        options=userfiles_options, 
-        value=userfiles[0],
+        options=userfiles_options,
+        placeholder="Select a test file or upload your own",
         className='form-control',
         style={'width': '40%', 'margin': 'auto', 'margin-bottom': '20px'}),
     dcc.Upload(
@@ -66,156 +49,90 @@ app.layout = html.Div([
             'textAlign': 'center',
             'margin-bottom': '20px',
         },
-        # Allow multiple files to be uploaded
         multiple=False
     ),
-    html.Textarea(id='haplogroup', placeholder='Enter your haplogroup', style={'width': '40%', 'margin': 'auto', 'margin-bottom': '20px'}),
-    html.Button('Submit', id='submit-data', n_clicks=0, style={'display': 'none'}),
-    html.Button('Clear', id='clear-upload', n_clicks=0, style={'display': 'none'}), 
+    html.Div([
+        dcc.Textarea(id='haplogroup',
+                   placeholder='Enter your haplogroup', 
+                   style={'width': '40%',
+                            'margin-left': 'auto',
+                            'margin-right': 'auto',
+                            'margin-bottom': '20px',
+                            'textAlign': 'center',}),
+        html.Button('Submit', id='submit-data', n_clicks=0, style={'width': '10%', 'margin': 'auto', 'display': 'block'})], 
+        style={'textAlign': 'center'}),
     html.Div(id='output-data-upload'),
-    html.Div(id='results-container',
-             style={'width': '40%',
-                     'margin': 'auto',
-                     'margin-top': '20px'}),
-    dash_table.DataTable(id='table', columns=[{"name": "", "id": ""}], data=[])
+    html.Div(id='total_comparisons', style={'width': '60%', 'margin': 'auto', 'margin-top': '20px'}),
+    html.Div(id='results-container', style={'width': '60%', 'margin': 'auto', 'margin-top': '20px'}),
+    html.Div(id='error-message', style={'color': 'red', 'textAlign': 'center'}),
 ])
 
-#callback to update upload box to show the name of uploaded file and clear button
 @app.callback(
-    Output('upload-data', 'style'),
-    Output('upload-data', 'children'),
-    Input('upload-data', 'filename'),
-    Input('upload-data', 'contents'),
-    Input('clear-upload', 'n_clicks')
+    Output('error-message', 'children'),
+    [Input('submit-data', 'n_clicks')],
+    [State('userfile-dropdown', 'value'),
+    State('upload-data', 'filename'),
+    State('haplogroup', 'value')],
 )
-
-#function to update the upload box
-def update_upload_box(filename, contents, n_clicks):
-    if n_clicks:
-        return {
-            'width': '40%', 
-            'margin': 'auto', 
-            'height': '60px',
-            'lineHeight': '60px',
-            'borderWidth': '1px',
-            'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-        }, html.Div([
-            'Drag and Drop or ',
-            html.A('Select File')
-        ])
-    elif contents is not None:
-        return {
-            'width': '40%', 
-            'margin': 'auto', 
-            'height': '60px',
-            'lineHeight': '60px',
-            'borderWidth': '1px',
-            'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-            'backgroundColor': '#00cc85' 
-        }, html.Div([
-            f'File uploaded: {filename}',
-            html.Button('Clear', id='clear-upload', n_clicks=0, style={'margin-right': '20px'})
-        ])
+def update_error_message(dropdown_value, filename, haplogroup, n_clicks):
+    if n_clicks is None:
+        # Submit button has not been clicked; return without updating the error message
+        return ''
+    
+    if (dropdown_value or filename) and haplogroup:
+        return ''  # Return empty message if conditions are met
     else:
-        return {
-            'width': '40%', 
-            'margin': 'auto', 
-            'height': '60px',
-            'lineHeight': '60px',
-            'borderWidth': '1px',
-            'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-        }, html.Div([
-            'Drag and Drop or ',
-            html.A('Select File')
-        ])
+        return 'Please select a file and enter your haplogroup to submit.' #return error message if conditions are not met
 
-#callback to update the results container when a file is selected/uploaded
+def parse_contents(contents, filename):
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+    return decoded
+
 @app.callback(
-    Output('results-container', 'children'),
-    [Input('userfile-dropdown', 'value'),
-    Input('upload-data', 'contents'),
-    Input('table', 'active_cell')],
-    [State('table', 'data'),
-    State('results-container', 'children')],
+    [Output('results-container', 'children'),
+    Output('total_comparisons', 'children')],
+    [Input('submit-data', 'n_clicks')],
+    [State('userfile-dropdown', 'value'),
+     State('upload-data', 'contents'),
+     State('upload-data', 'filename'),
+     State('haplogroup', 'value')],
     prevent_initial_call=True
 )
-
-#function to update the results container
-def update_results(selected_file, uploaded_file, active_cell, data, current_children): 
-    ctx = callback_context
-    if not ctx.triggered:
-        raise exceptions.PreventUpdate
-    else:
-        input_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    if input_id in ['userfile-dropdown', 'upload-data']:
+def update_output(n_clicks, dropdown_value, upload_contents, upload_filename, haplogroup):
+    if n_clicks > 0:
+        file_path = None
+        if upload_contents:
+            content = parse_contents(upload_contents, upload_filename)
+            file_path = f'03_tmpfiles/Filtered_User/{upload_filename}'
+            with open(file_path, 'wb') as f:
+                f.write(content)
+        else:
+            file_path = dropdown_value
+        
         try:
-            # If a file was uploaded, use the uploaded file
-            if uploaded_file is not None:
-                # Get the file content
-                content = uploaded_file.read()
-                # Get the file name
-                filename = uploaded_file.filename
-                # Save the file
-                with open(f'03_tmpfiles/Filtered_User/{filename}', 'wb') as f:
-                    f.write(content)
-                # Set the selected file to the uploaded file
-                selected_file = f'03_tmpfiles/Filtered_User/{filename}'
-            else:
-                # If no file was uploaded, use the selected file
-                selected_file = selected_file
-            #generate filtered file and return path
-            results_file_path = User_snpfilter.UserCrossref(selected_file, haplogroup)
-            
-            # Call function from UserCompareAADR to process the file and get results
-            results = UserCompareAADR.getMatches(results_file_path)
-            
+            # Assuming your processing functions return a DataFrame or similar for displaying in the DataTable
+            results_file_path = User_snpfilter.UserCrossref(file_path, haplogroup)
+            AADR_ped_rsids, AADR_ped_meta = UserCompareAADR.getAADRData()
+            results, total_compared = UserCompareAADR.getMatches(results_file_path, AADR_ped_rsids, AADR_ped_meta)
             
             return html.Div([
                 dash_table.DataTable(
                     id='table',
-                    columns=[{"name": results.columns[1], "id": results.columns[1]}, {"name": results.columns[6], "id": results.columns[6]}],
-                    data=results.iloc[:, [1, 6]].to_dict('records'),
-                    style_table={'overflowX': 'auto'},  # Optional: adds horizontal scrollbar if table exceeds container width
+                    columns=[{"name": results.columns[1], "id": results.columns[1]}, {"name": results.columns[6], "id": results.columns[6]}, {"name": results.columns[7], "id" : results.columns[7]} ],
+                    data=results.iloc[:, [1, 6, 7]].to_dict('records'),
+                    style_table={'overflowX': 'auto'}, 
+                    style_cell_conditional=[{'if': {'column_id': 'non_matching_mutations'},
+                                            'textAlign': 'left'}]
                 )
-            ])
+            ]), html.Div(f'Total number of alleles compared: {total_compared}')
+    
         except Exception as e:
-            # If an error occurs, return a Div containing the error message
-            return html.Div([
-                'An error occurred: ', str(e),
-                dash_table.DataTable(id='table')
-            ])
-    elif input_id == 'table':
-        try:
-            if active_cell:
-                #get the row that was clicked
-                row = data[active_cell['row']]
-                #get the individual id from the row
-                individual_id = row['GeneticID']
-                #get the individual data from the AADR_metadata_subset data frame
-                additional_detail = UserCompareAADR.getMetaData(individual_id)
-                #return the individual data
-                return html.Div([
-                dash_table.DataTable(
-                    id='table',
-                    columns=[{"name": i, "id": i} for i in additional_detail.columns],
-                    data=additional_detail.to_dict('records'),
-                    style_table={'overflowX': 'auto'},  # Optional: adds horizontal scrollbar if table exceeds container width
-                )
-            ])
 
-        except Exception as e:
-            # If an error occurs, return a Div containing the error message
-            return html.Div([
-                'An error occurred: ', str(e),
-                dash_table.DataTable(id='table')
-            ])
+            error_message = f'An error occurred: {e}'
+            return (html.Div(error_message), html.Div('Unable to compute total comparisons due to error'))
 
-#run the app
+
+
 if __name__ == '__main__':
     app.run_server(debug=True, port=6015)
