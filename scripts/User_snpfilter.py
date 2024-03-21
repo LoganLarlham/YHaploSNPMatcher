@@ -1,9 +1,8 @@
-#this script will have a function which takes test4.txt snp file and compares to the AncientYDNA/snpFile_b37_isogg2019.txt file 
-#to cross-reference and filter out the snps that are not in the isogg2019 file. output subset file will include two header lines, first with user and haplogroup,
+#this script will have a function which takes the user snp file and compares to the AncientYDNA/snpFile_b37_isogg2019.txt file 
+#to cross-reference and filter out the snps that are not in the isogg2019 file and are not part of the indicated haplogroup. output subset file will include two header lines, first with user
 # second with column names. 
 #should use pandas to read in the files and compare the snps.
 
-#may want to add form for naming user.
 
 
 import os
@@ -19,7 +18,10 @@ def UserCrossref(inputfile, haplogroup):
     #add column names to isogg2019
     isogg2019.columns = ['rsid', 'position', 'ref', 'haplogroup', 'var', 'genotype']
     #remove all row from isogg2019 which are not in the haplogroup
-    isogg2019 = isogg2019[isogg2019['haplogroup'] == haplogroup]
+    try:
+        isogg2019 = isogg2019[isogg2019['haplogroup'] == haplogroup]
+    except KeyError:
+        raise ValueError(f"Haplogroup {haplogroup} not found in database (isogg2019)")
     
     #inputfiel basename
     basename = os.path.basename(inputfile)

@@ -1,11 +1,13 @@
 #this script will take the filtered files 01_Raw_data/AADR_plink/AncMalesRelv_flat.map and 01_Raw_data/AADR_plink/AncMalesRelv_flat.ped
-#and create a dataframe, then compare the snps at each poisition to the snps in the filtered user file. b37_filtered_Test4_DNA.txt
+#and create a dataframe, then compare the snps at each poisition to the snps in the filtered user file.
 #it will the output a list of IDs from the map file in descending order of the number of snps that match the user file.
+#it will also output the total number of snps that were compared.
 
-import os
-import sys
+
 import pandas as pd
 import numpy as np
+
+
 
 def getAADRAnnotations():
     #load in .xlsx file with AADR metadata
@@ -56,11 +58,9 @@ def getAADRData():
     AADR_ped_rsids.columns = ['rsid'] + [f'individual_{i}' for i in range(len(AADR_ped_rsids.columns) - 1)]
     return AADR_ped_rsids, AADR_ped_meta
 
-
-#need to add functionality to get the non-matching snps from the individuals and the the corresponding snp from the user file and its position
-#need to add functionality to get additional meta data from excel file
-#need to format and make look better/speed up
-#n
+#run the functions so they are available to the user without having to be called each time the submit button is pressed
+AADR_metadata_subset = getAADRAnnotations()
+AADR_data = getAADRData()
 
 def getNonMatches(userfile_selection, merged_df):
      #Create non_matches DataFrame
@@ -82,7 +82,7 @@ def getNonMatches(userfile_selection, merged_df):
     #the digits following the underscore in the first columnb of matches is the index of the individual in AADR_ped_meta 
 
 
-def getMatches(userfile_selection, AADR_ped_rsids, AADR_ped_meta):
+def getMatches(userfile_selection, AADR_ped_rsids, AADR_ped_meta, results_num):
 
     #Read in the user file
     userfile = pd.read_csv(userfile_selection, sep='\t', skiprows=2, names=['rsid', 'chromosome', 'position', 'allele2'])
@@ -133,7 +133,7 @@ def getMatches(userfile_selection, AADR_ped_rsids, AADR_ped_meta):
     total_allele_comparisons = len(merged_df)
 
     print(AADR_ped_meta)
-    return AADR_ped_meta.sort_values(by='matches', ascending=False), total_allele_comparisons
+    return AADR_ped_meta.sort_values(by='matches', ascending=False).head(results_num), total_allele_comparisons
 
 
   

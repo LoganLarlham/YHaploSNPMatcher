@@ -1,19 +1,22 @@
-from dash import Dash, dcc, html, Input, Output, dash_table, State, callback_context
+#This script is a Dash app that allows users to upload their DNA files and compare them to the AADR database.
+
+#import necessary Dash modules and other libraries
+
+from dash import Dash, dcc, html, Input, Output, dash_table, State
 import glob
 import os
 import sys
 import base64
 
+#add ../ to sys.path for easy importing of scripts
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# import necessary functions from scripts
 from scripts import UserCompareAADR, User_snpfilter
+from scripts.UserCompareAADR import AADR_data, AADR_metadata_subset
 
-external_stylesheets_style = [{
-    'href': '04_Dashapp/assets/bootstrap.css',
-    'rel': 'stylesheet',
-}]
 
-app = Dash(__name__, external_stylesheets=external_stylesheets_style, suppress_callback_exceptions=True)
+app = Dash(__name__, suppress_callback_exceptions=True)
 app.title = 'Y Haplogroup Matcher'
 
 userfiles = glob.glob('01_Raw_data/TestUsers/Test*/*_DNA.txt') + glob.glob('01_Raw_data/TestUsers/Test*/*.csv')
@@ -59,23 +62,36 @@ app.layout = html.Div([
                             'margin-right': 'auto',
                             'margin-bottom': '20px',
                             'textAlign': 'center',}),
+        html.Div('Number of results to display:', style={'margin-bottom': '10px'}),
+        dcc.Dropdown(id='num_results',
+                     options=[{'label': i, 'value': i} for i in range(5, 51, 5)],
+                     value=25,
+                     style={'width': '40%',
+                            'margin-left': 'auto',
+                            'margin-right': 'auto',
+                            'margin-bottom': '20px',
+                            'textAlign': 'center',}),
         html.Button('Submit', id='submit-data', n_clicks=0, style={'width': '10%', 'margin': 'auto', 'display': 'block'})], 
         style={'textAlign': 'center'}),
     html.Div(id='output-data-upload'),
     html.Div(id='total_comparisons', style={'width': '60%', 'margin': 'auto', 'margin-top': '20px'}),
-    html.Div(id='results-container', style={'width': '60%', 'margin': 'auto', 'margin-top': '20px'}),
+    html.Div([
+        html.Div(id='results-container', style={'width': '45%', 'margin-right': '5%'}),
+        html.Div(id='additional-data', style={'width': '45%', 'margin-left': '5%'})
+    ], style={'display': 'flex', 'justify-content': 'space-between', 'width': '90%', 'margin': 'auto'}),
     html.Div(id='error-message', style={'color': 'red', 'textAlign': 'center'}),
 ])
 
 @app.callback(
     Output('error-message', 'children'),
-    [Input('submit-data', 'n_clicks')],
+    [Input('submit-data', 'n_clicks'),
+    Input('results-container', 'children')],
     [State('userfile-dropdown', 'value'),
     State('upload-data', 'filename'),
     State('haplogroup', 'value')],
 )
-def update_error_message(dropdown_value, filename, haplogroup, n_clicks):
-    if n_clicks is None:
+def update_error_message(dropdown_value, filename, haplogroup, n_clicks, results_children):
+    if n_clicks is None or results_children:
         # Submit button has not been clicked; return without updating the error message
         return ''
     
@@ -96,10 +112,11 @@ def parse_contents(contents, filename):
     [State('userfile-dropdown', 'value'),
      State('upload-data', 'contents'),
      State('upload-data', 'filename'),
-     State('haplogroup', 'value')],
+     State('haplogroup', 'value'),
+     State('num_results', 'value')],
     prevent_initial_call=True
 )
-def update_output(n_clicks, dropdown_value, upload_contents, upload_filename, haplogroup):
+def update_output(n_clicks, dropdown_value, upload_contents, upload_filename, haplogroup, num_results):
     if n_clicks > 0:
         file_path = None
         if upload_contents:
@@ -113,26 +130,60 @@ def update_output(n_clicks, dropdown_value, upload_contents, upload_filename, ha
         try:
             # Assuming your processing functions return a DataFrame or similar for displaying in the DataTable
             results_file_path = User_snpfilter.UserCrossref(file_path, haplogroup)
-            AADR_ped_rsids, AADR_ped_meta = UserCompareAADR.getAADRData()
-            results, total_compared = UserCompareAADR.getMatches(results_file_path, AADR_ped_rsids, AADR_ped_meta)
-            
+            AADR_ped_rsids, AADR_ped_meta = AADR_data
+            results, total_compared = UserCompareAADR.getMatches(results_file_path, AADR_ped_rsids, AADR_ped_meta, num_results)
+
+
             return html.Div([
                 dash_table.DataTable(
                     id='table',
                     columns=[{"name": results.columns[1], "id": results.columns[1]}, {"name": results.columns[6], "id": results.columns[6]}, {"name": results.columns[7], "id" : results.columns[7]} ],
                     data=results.iloc[:, [1, 6, 7]].to_dict('records'),
                     style_table={'overflowX': 'auto'}, 
-                    style_cell_conditional=[{'if': {'column_id': 'non_matching_mutations'},
-                                            'textAlign': 'left'}]
-                )
-            ]), html.Div(f'Total number of alleles compared: {total_compared}')
+                    style_data_conditional=[
+                        {'if': {'column_id': 'non_matching_mutations'}, 'textAlign': 'left'}
+                        ]     
+                        )
+            ]),  html.Div([html.P(f'Total number of alleles compared: {total_compared}'), html.P('Click a match for additional info')])
     
-        except Exception as e:
+        
+        except ValueError as e:
 
             error_message = f'An error occurred: {e}'
             return (html.Div(error_message), html.Div('Unable to compute total comparisons due to error'))
 
-
+@app.callback(
+    Output('additional-data', 'children'),
+    [Input('table', 'active_cell'),
+     Input('table', 'data')],
+    prevent_initial_call=True
+)
+def display_additional_data(active_cell, data):
+    if active_cell:
+        try:
+            # get the row that was clicked
+            row = data[active_cell['row']]
+            # get the individual id from the row
+            individual_id = row['GeneticID']
+            # get the individual data from the AADR_metadata_subset data frame
+            additional_detail = UserCompareAADR.getMetaData(individual_id, AADR_metadata_subset)
+            # return the individual data
+            return html.Div([
+                dash_table.DataTable(
+                    id='additional-table',
+                    columns=[{"name": i, "id": i} for i in additional_detail.columns],
+                    data=additional_detail.to_dict('records'),
+                    style_table={'overflowX': 'auto'},
+                )
+            ])
+        except Exception as e:
+            # If an error occurs, return a Div containing the error message
+            return html.Div([
+                'An error occurred: ', str(e),
+                dash_table.DataTable(id='additional-table')
+            ])
+    else:
+        return html.Div()
 
 if __name__ == '__main__':
     app.run_server(debug=True, port=6015)
