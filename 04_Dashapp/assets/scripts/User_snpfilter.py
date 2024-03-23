@@ -14,7 +14,7 @@ import pandas as pd
 
 def UserCrossref(inputfile, haplogroup):
     #read in the isogg2019 file
-    isogg2019 = pd.read_csv('01_Raw_data/AncientYDNA/snpFile_b37_isogg2019.txt', sep='\t')
+    isogg2019 = pd.read_csv('01_Raw_data/YDNA_SNP/snpFile_b37_isogg2019.txt', sep='\t')
     #add column names to isogg2019
     isogg2019.columns = ['rsid', 'position', 'ref', 'haplogroup', 'var', 'genotype']
     #remove all row from isogg2019 which are not in the haplogroup

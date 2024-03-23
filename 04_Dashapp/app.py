@@ -8,12 +8,11 @@ import os
 import sys
 import base64
 
-#add ../ to sys.path for easy importing of scripts
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets/scripts')))
 
 # import necessary functions from scripts
-from scripts import UserCompareAADR, User_snpfilter
-from scripts.UserCompareAADR import AADR_data, AADR_metadata_subset
+from assets.scripts import UserCompareAADR, User_snpfilter
+from assets.scripts.UserCompareAADR import AADR_data, AADR_metadata_subset
 
 # initialize the Dash app
 app = Dash(__name__, suppress_callback_exceptions=True)

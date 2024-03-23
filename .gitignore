@@ -2,3 +2,11 @@
 03_tmpfiles
 scripts/__pycache__
 04_Dashapp/app01.py
+!01_Raw_data/AADR_plink/AADR Annotation.xlsx
+!01_Raw_data/AADR_plink/AADR_metadata.tsv
+!01_Raw_data/AADR_plink/AncMalesRelvLtr.map
+!01_Raw_data/AADR_plink/AncMalesRelv_flat.map
+!01_Raw_data/YDNA_SNP
+!01_Raw_data/TestUsers/
+!03_tmpfiles/
+check133snp.py
