@@ -8,7 +8,7 @@ import os
 import sys
 import base64
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'assets/scripts')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # import necessary functions from scripts
 from assets.scripts import UserCompareAADR, User_snpfilter
@@ -194,6 +194,8 @@ def display_additional_data(active_cell, data):
     else:
         return html.Div()
 
-#run the app, run on port 6015 (chosen randomly, becaause default was often in use)
+#run the app on user selected port
 if __name__ == '__main__':
-    app.run_server(debug=True, port=6015)
+    port = input("Please enter the port number you want to run the app on: ")
+    print("Running the app on port", port)
+    app.run_server(debug=True, port=int(port))
