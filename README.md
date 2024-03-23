@@ -15,19 +15,19 @@ Ensure you have Python and the following packages installed before running this 
 You can install these packages using pip:
 
 ```shell
-pip install dash pandas numpy
+pip install dash pandas numpy openpyxl
 ```
 
 Or, if you prefer using Conda, use:
 
 ```shell
-conda install dash pandas numpy
+conda install dash pandas numpy openpyxl
 ```
 ## Usage
 To use the Y Haplogroup Matcher, follow these steps:
 
 1. Clone the repository to your local machine.
-2. Navigate to the project directory.
+2. Navigate to the project directory. "YHaploSNPMatcher/"
 3. Run the app.py script located within the 04_Dashapp directory to start the Dash application:
 ```shell
 python 04_Dashapp/app.py
