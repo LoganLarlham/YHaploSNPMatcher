@@ -12,7 +12,7 @@ import numpy as np
 def getAADRAnnotations():
     #load in .xlsx file with AADR metadata
     #read in the AADR metadata file
-    AADR_metadata = pd.read_excel('01_Raw_data/AADR_plink/AADR Annotation.xlsx')
+    AADR_metadata = pd.read_excel('01_Raw_data/AADR_plink/AADR_Annotation.xlsx')
 
     #write AADR_metadata to a tsv file
     AADR_metadata.to_csv('01_Raw_data/AADR_plink/AADR_metadata.tsv', sep='\t', index=False)
