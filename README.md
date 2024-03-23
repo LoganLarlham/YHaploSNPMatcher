@@ -33,6 +33,7 @@ To use the Y Haplogroup Matcher, follow these steps:
 python 04_Dashapp/app.py
 ```
 4. Specify in the command line the port you'd like the webapp to run on.
+(small bug requirres you to enter port in twice in the CLI)
 
 5. Open a web browser and go to http://127.0.0.1:XXXX/ (XXXX being your specified port).
 
