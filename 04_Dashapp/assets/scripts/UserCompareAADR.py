@@ -3,11 +3,12 @@
 #it will the output a list of IDs from the map file in descending order of the number of snps that match the user file.
 #it will also output the total number of snps that were compared.
 
-
+import sys
+import os
 import pandas as pd
 import numpy as np
 
-
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def getAADRAnnotations():
     #load in .xlsx file with AADR metadata
