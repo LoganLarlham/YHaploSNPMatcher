@@ -8,9 +8,10 @@ This application allows users to upload their DNA files in a specific format (pl
 
 Ensure you have Python and the following packages installed before running this application:
 
-- Dash
-- Pandas
-- NumPy
+- Dash 2.16.1
+- Pandas 2.2.1
+- NumPy 1.26.4
+- openpyxl 3.1.2
 
 You can install these packages using pip:
 
